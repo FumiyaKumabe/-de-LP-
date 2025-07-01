@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>警備業向け勤怠アプリ「スマホde勤怠」</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            color: #333333;
+            line-height: 1.6em;
+            overflow-x: hidden;
+            background-color: #f8faff;
+        }
+
+        section {
+            padding: 80px 16px;
+        }
+        @media (min-width: 768px) {
+            section {
+                padding: 100px 40px;
+            }
+        }
+        @media (min-width: 1200px) {
+            section {
+                padding: 120px 100px;
+            }
+        }
+
+        .section-heading {
+            font-family: 'Noto Sans JP', sans-serif;
+            font-weight: 900;
+            color: #1a202c;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background-color: #005FB8;
+            color: white;
+            font-weight: bold;
+            padding: 14px 32px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 95, 184, 0.3);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .btn-primary:hover {
+            background-color: #004a9e;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 95, 184, 0.4);
+        }
+        .btn-secondary {
+            border: 2px solid #005FB8;
+            color: #005FB8;
+            font-weight: bold;
+            padding: 14px 32px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        .btn-secondary:hover {
+            background-color: #005FB8;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 95, 184, 0.2);
+        }
+
+        .check-list li {
+            position: relative;
+            padding-left: 36px;
+            margin-bottom: 12px;
+            font-size: 18px;
+            color: #4a5568;
+        }
+        .check-list li::before {
+            content: '✔';
+            color: #005FB8;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            font-size: 24px;
+            line-height: 1;
+            top: 2px;
+        }
+
+        .accordion-item {
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .accordion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 18px;
+            color: #2d3748;
+            transition: color 0.3s ease;
+        }
+        .accordion-header:hover {
+            color: #005FB8;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+            padding-bottom: 0;
+            color: #4a5568;
+        }
+        .accordion-content.active {
+            max-height: 300px; /* Adjust as needed for content */
+            padding-bottom: 20px;
+        }
+        .accordion-icon {
+            transition: transform 0.3s ease-out;
+            font-size: 20px;
+        }
+        .accordion-icon.rotate {
+            transform: rotate(90deg);
+        }
+
+        @keyframes scroll-logos {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-scroll-logos {
+            animation: scroll-logos 30s linear infinite;
+            width: fit-content;
+        }
+        .logo-slider-wrapper {
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+        }
+        .logo-slider-inner {
+            display: flex;
+            width: 200%; /* Double the width to allow seamless loop */
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        @media (max-width: 767px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+
+        .pie-chart-container-wrapper {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+        @media (max-width: 767px) {
+            .pie-chart-container-wrapper {
+                width: 250px;
+                height: 250px;
+            }
+        }
+        /* Custom styles for the emphasized Before/After section */
+        .before-after-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem; /* Reduced gap for tighter fit */
+            font-size: 1.125rem; /* text-lg */
+            color: #4a5568;
+            /* Default to left-align, specific columns will override */
+            justify-content: flex-start;
+        }
+        .before-after-item .icon {
+            font-size: 1.5rem; /* text-2xl */
+            width: 2.5rem; /* w-10 */
+            height: 2.5rem; /* h-10 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9999px; /* rounded-full */
+            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .before-after-item.before .icon {
+            background-color: #FEE2E2; /* red-100 */
+            color: #EF4444; /* red-500 */
+        }
+        .before-after-item.after .icon {
+            background-color: #D1FAE5; /* green-100 */
+            color: #10B981; /* green-500 */
+        }
+    </style>
+</head>
+<body class="bg-white">
+
+    <!-- Header Section -->
+    <header class="sticky top-0 z-50 bg-white shadow-md py-4">
+        <div class="max-w-screen-xl mx-auto flex justify-between items-center px-4 sm:px-8">
+            <div class="text-2xl font-extrabold text-[#005FB8]">
+                株式会社ビジコン・ジャパン
+            </div>
+            <nav class="flex items-center gap-4">
+                <!-- Phone number moved to the right of the company name, left of the button -->
+                <a href="tel:0453410246" class="text-lg font-bold text-[#005FB8] hover:text-[#004a9e] flex items-center gap-2">
+                    <i class="fas fa-phone-alt"></i>
+                    <span>045-341-0246</span>
+                </a>
+                <a href="#contact" class="btn-primary text-sm hidden md:inline-block">
+                    資料請求・導入相談
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="relative bg-gradient-to-br from-[#F5F9FF] to-white overflow-hidden">
+        <div class="max-w-screen-xl mx-auto flex flex-col md:flex-row items-center justify-between gap-12">
+            <div class="md:w-1/2 text-center md:text-left">
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight" style="font-family: 'Noto Sans JP', sans-serif;">
+                    警備業の管理、<br>電話も紙も不要に。<br class="hidden lg:inline">スマホひとつで<br>その日から業務改善。
+                </h1>
+                <p class="text-lg sm:text-xl mb-10 text-gray-700">
+                    警備業界導入実績1000社以上。<br>管制、日報、給与までスマホ１つでまとめて管理。
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center md:justify-start gap-4">
+                    <a href="#contact" class="btn-primary">
+                        無料で資料請求する
+                    </a>
+                    <a href="#contact" class="btn-secondary">
+                        導入相談を申し込む
+                    </a>
+                </div>
+            </div>
+            <div class="md:w-1/2 w-full flex justify-center md:justify-end relative">
+                <img src="https://placehold.co/700x500/D3D3D3/666666?text=Security+Guard+with+App" alt="スマホを操作する警備員とアプリ画面" class="w-full max-w-md md:max-w-none h-auto object-contain rounded-xl shadow-2xl transform hover:scale-105 transition duration-500 ease-in-out">
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="bg-white">
+        <div class="max-w-screen-xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl section-heading mt-16">
+                まだ紙と電話で管制の管理をしていませんか？
+            </h2>
+            <p class="text-xl text-gray-700 mb-12 max-w-2xl mx-auto">
+                非効率なアナログ業務に、時間を奪われていませんか？<br>「スマホde勤怠」導入前の警備会社が抱える共通の課題です。
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
+                <!-- Problem 1: 複雑な上下番連絡 -->
+                <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center text-center">
+                    <div class="w-20 h-20 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-4xl mb-6">
+                        <i class="fas fa-phone-volume"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">複雑な上下番連絡</h3>
+                    <p class="text-gray-700 text-base">電話やLINEでバラバラに届く上下番連絡に、管制業務が圧迫されていませんか？確認漏れや伝達ミスも発生しがちです。</p>
+                </div>
+                <!-- Problem 2: タイムカードの回収・集計 -->
+                <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center text-center">
+                    <div class="w-20 h-20 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-4xl mb-6">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">タイムカードの回収・集計</h3>
+                    <p class="text-gray-700 text-base">現場ごとに異なるタイムカードの回収や手作業での集計に、膨大な時間を費やしていませんか？月末の締め作業が大きな負担です。</p>
+                </div>
+                <!-- Problem 3: 紙の給与明細配布 -->
+                <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center text-center">
+                    <div class="w-20 h-20 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-4xl mb-6">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">紙の給与明細配布</h3>
+                    <p class="text-gray-700 text-base">毎月の給与明細印刷、封入、郵送作業に追われていませんか？コストと手間がかかるだけでなく、情報漏洩のリスクも伴います。</p>
+                </div>
+                <!-- Problem 4: 手渡しシフト表の調整 -->
+                <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center text-center">
+                    <div class="w-20 h-20 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-4xl mb-6">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">手渡しシフト表の調整</h3>
+                    <p class="text-gray-700 text-base">シフト表の作成・印刷・手渡し、そして急な変更への対応に苦労していませんか？連絡の行き違いや手間が業務を滞らせます。</p>
+                </div>
+                <!-- Problem 5: 手書き日報の管理 -->
+                <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center text-center">
+                    <div class="w-20 h-20 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-4xl mb-6">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">手書き日報の管理</h3>
+                    <p class="text-gray-700 text-base">手書き日報の回収、内容確認、データ入力に、非効率を感じていませんか？集計作業に時間がかかり、リアルタイムな状況把握が困難です。</p>
+                </div>
+                <!-- Problem 6: 情報共有の遅延・漏れ -->
+                <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center text-center">
+                    <div class="w-20 h-20 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-4xl mb-6">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">情報共有の遅延・漏れ</h3>
+                    <p class="text-gray-700 text-base">重要な社内連絡や緊急時の情報共有がスムーズに行えず、伝達漏れや遅延が発生していませんか？迅速な対応が求められる警備現場では致命的です。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Client Logo Slider Section -->
+    <section class="bg-gray-50 py-16 border-t border-b border-gray-200">
+        <div class="max-w-screen-xl mx-auto text-center">
+            <h2 class="text-2xl sm:text-3xl section-heading mb-10">
+                Proシリーズ 導入企業
+            </h2>
+            <div class="logo-slider-wrapper">
+                <div class="logo-slider-inner animate-scroll-logos">
+                    <!-- Duplicate logos for seamless scrolling -->
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+A" alt="企業ロゴA" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+B" alt="企業ロゴB" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+C" alt="企業ロゴC" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+D" alt="企業ロゴD" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+E" alt="企業ロゴE" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+F" alt="企業ロゴF" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+G" alt="企業ロゴG" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+H" alt="企業ロゴH" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <!-- Duplicated set of logos -->
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+A" alt="企業ロゴA" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+B" alt="企業ロゴB" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+C" alt="企業ロゴC" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+D" alt="企業ロゴD" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+E" alt="企業ロゴE" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+F" alt="企業ロゴF" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+G" alt="企業ロゴG" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                    <img src="https://placehold.co/150x75/FFFFFF/333333?text=Client+H" alt="企業ロゴH" class="h-16 opacity-75 grayscale hover:grayscale-0 transition duration-300 mx-4">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="bg-white">
+        <div class="max-w-screen-xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl section-heading mt-16">
+                スマホde勤怠で、ここまで日々の業務が変わります
+            </h2>
+            <div class="flex flex-col gap-16 mt-12">
+                <div class="flex flex-col md:flex-row items-center gap-8 md:gap-16 bg-gray-50 p-8 rounded-2xl shadow-lg">
+                    <div class="md:w-1/2 text-left">
+                        <div class="text-5xl text-[#005FB8] mb-4 font-bold">1.</div>
+                        <h3 class="text-2xl font-bold mb-4">勤怠打刻：ワンタップ／上下番対応不要／自宅出発も記録</h3>
+                        <p class="text-lg text-gray-700">
+                            スマホで簡単に打刻が完了。上下番の連絡はアプリが自動で行うため、電話対応は一切不要です。自宅からの出発時間も正確に記録でき、日々の業務負担を大幅に軽減します。
+                        </p>
+                    </div>
+                    <div class="md:w-1/2 w-full">
+                        <img src="https://placehold.co/500x350/E0E0E0/333333?text=Attendance+Punch+App+Screen" alt="勤怠打刻アプリ画面" class="w-full h-auto object-contain rounded-lg shadow-md">
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row-reverse items-center gap-8 md:gap-16 bg-gray-50 p-8 rounded-2xl shadow-lg">
+                    <div class="md:w-1/2 text-left">
+                        <div class="text-5xl text-[#005FB8] mb-4 font-bold">2.</div>
+                        <h3 class="text-2xl font-bold mb-4">シフト通知：クラウド連携／ナビ付き通知</h3>
+                        <p class="text-lg text-gray-700">
+                            作成されたシフトはクラウドでリアルタイムに連携され、警備員へスマホに自動通知。現場までのナビゲーション機能も搭載しているため、迷うことなくスムーズに移動できます。
+                        </p>
+                    </div>
+                    <div class="md:w-1/2 w-full">
+                        <img src="https://placehold.co/500x350/E0E0E0/333333?text=Shift+Notification+App+Screen" alt="シフト通知アプリ画面" class="w-full h-auto object-contain rounded-lg shadow-md">
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center gap-8 md:gap-16 bg-gray-50 p-8 rounded-2xl shadow-lg">
+                    <div class="md:w-1/2 text-left">
+                        <div class="text-5xl text-[#005FB8] mb-4 font-bold">3.</div>
+                        <h3 class="text-2xl font-bold mb-4">給与明細・休暇申請：アプリで確認＆申請</h3>
+                        <p class="text-lg text-gray-700">
+                            紙での明細配布はもう不要。給与明細はアプリでいつでも確認でき、休暇申請もスマホから簡単に行えます。管理業務の負担を大幅に軽減し、ペーパーレス化を促進します。
+                        </p>
+                    </div>
+                    <div class="md:w-1/2 w-full">
+                        <img src="https://placehold.co/500x350/E0E0E0/333333?text=Payslip+Leave+App+Screen" alt="給与明細アプリ画面" class="w-full h-auto object-contain rounded-lg shadow-md">
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row-reverse items-center gap-8 md:gap-16 bg-gray-50 p-8 rounded-2xl shadow-lg">
+                    <div class="md:w-1/2 text-left">
+                        <div class="text-5xl text-[#005FB8] mb-4 font-bold">4.</div>
+                        <h3 class="text-2xl font-bold mb-4">日報電子化：スマホ署名→クラウド保存</h3>
+                        <p class="text-lg text-gray-700">
+                            手書き日報の回収やスキャン作業はもう過去のもの。スマホで日報を記入し、電子署名でクラウドに保存。いつでもどこからでも確認・管理が可能です。
+                        </p>
+                    </div>
+                    <div class="md:w-1/2 w-full">
+                        <img src="https://placehold.co/500x350/E0E0E0/333333?text=Daily+Report+App+Screen" alt="日報電子化アプリ画面" class="w-full h-auto object-contain rounded-lg shadow-md">
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row items-center gap-8 md:gap-16 bg-gray-50 p-8 rounded-2xl shadow-lg">
+                    <div class="md:w-1/2 text-left">
+                        <div class="text-5xl text-[#005FB8] mb-4 font-bold">5.</div>
+                        <h3 class="text-2xl font-bold mb-4">お知らせ配信：一斉通知＋既読管理</h3>
+                        <p class="text-lg text-gray-700">
+                            全従業員へ一斉にお知らせを配信。誰が既読したか管理できるため、重要な連絡の伝達漏れを防ぎ、社内コミュニケーションを円滑にします。
+                        </p>
+                    </div>
+                    <div class="md:w-1/2 w-full">
+                        <img src="https://placehold.co/500x350/E0E0E0/333333?text=Notification+App+Screen" alt="お知らせ配信アプリ画面" class="w-full h-auto object-contain rounded-lg shadow-md">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cost Reduction Section -->
+    <section class="bg-gradient-to-b from-white to-[#F5F9FF]">
+        <div class="max-w-screen-xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl section-heading mt-16">
+                月65.2時間、年間783時間の業務削減。<br>約117万円の経費削減を実現。
+            </h2>
+
+            <p class="text-lg text-center mx-auto mb-16 max-w-[800px] text-gray-700">
+                スマホde勤怠を導入することで、1ヶ月約85時間かかっていた勤怠・日報・給与・連絡業務が、<br class="hidden sm:inline">月20時間未満に。年間783時間、1,175,040円（時給1500円換算）を削減。
+            </p>
+
+            <div class="bg-white rounded-xl p-8 shadow-xl w-full max-w-6xl mx-auto mb-16">
+                <h3 class="text-3xl font-extrabold mb-8 text-center text-gray-900">業務改善 Before/After</h3>
+
+                <!-- Header Row for larger screens -->
+                <div class="hidden md:grid grid-cols-[1.2fr_2fr_2fr] gap-4 text-left font-bold text-xl mb-4 pb-2 border-b-2 border-gray-200">
+                    <div class="col-span-1 text-gray-800 text-center">業務内容</div>
+                    <div class="col-span-1 text-[#E57373] text-center">導入前</div>
+                    <div class="col-span-1 text-[#81C784] text-center">導入後</div>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Item 1: 勤怠打刻 -->
+                    <div class="grid grid-cols-1 md:grid-cols-[1.2fr_2fr_2fr] gap-4 items-center bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <div class="text-gray-800 font-bold text-lg md:text-xl md:col-span-1 text-center">勤怠打刻</div>
+                        <div class="md:col-span-1 border-b md:border-b-0 md:border-r border-gray-200 pb-2 md:pb-0 pr-4">
+                            <div class="before-after-item before">
+                                <div class="icon"><i class="fas fa-file-alt"></i></div>
+                                <div class="text-left">紙のタイムカード記入、FAX送信</div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-1 pt-2 md:pt-0 pl-4">
+                            <div class="before-after-item after">
+                                <div class="icon"><i class="fas fa-mobile-alt"></i></div>
+                                <div class="text-left">スマホで打刻、自動集計</div>
+                            </div>
+                        </div>
+                        <!-- Mobile separator -->
+                        <div class="md:hidden col-span-full flex justify-center items-center py-2">
+                            <i class="fas fa-arrow-down text-2xl text-[#005FB8]"></i>
+                        </div>
+                    </div>
+
+                    <!-- Item 2: 給与明細 -->
+                    <div class="grid grid-cols-1 md:grid-cols-[1.2fr_2fr_2fr] gap-4 items-center bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <div class="text-gray-800 font-bold text-lg md:text-xl md:col-span-1 text-center">給与明細</div>
+                        <div class="md:col-span-1 border-b md:border-b-0 md:border-r border-gray-200 pb-2 md:pb-0 pr-4">
+                            <div class="before-after-item before">
+                                <div class="icon"><i class="fas fa-envelope"></i></div>
+                                <div class="text-left">印刷、封入、郵送</div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-1 pt-2 md:pt-0 pl-4">
+                            <div class="before-after-item after">
+                                <div class="icon"><i class="fas fa-money-check-alt"></i></div>
+                                <div class="text-left">アプリで確認、ペーパーレス化</div>
+                            </div>
+                        </div>
+                        <!-- Mobile separator -->
+                        <div class="md:hidden col-span-full flex justify-center items-center py-2">
+                            <i class="fas fa-arrow-down text-2xl text-[#005FB8]"></i>
+                        </div>
+                    </div>
+
+                    <!-- Item 3: シフト通知 -->
+                    <div class="grid grid-cols-1 md:grid-cols-[1.2fr_2fr_2fr] gap-4 items-center bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <div class="text-gray-800 font-bold text-lg md:text-xl md:col-span-1 text-center">シフト通知</div>
+                        <div class="md:col-span-1 border-b md:border-b-0 md:border-r border-gray-200 pb-2 md:pb-0 pr-4">
+                            <div class="before-after-item before">
+                                <div class="icon"><i class="fas fa-calendar-alt"></i></div>
+                                <div class="text-left">Excel印刷、手渡し</div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-1 pt-2 md:pt-0 pl-4">
+                            <div class="before-after-item after">
+                                <div class="icon"><i class="fas fa-bell"></i></div>
+                                <div class="text-left">クラウド連携、自動通知</div>
+                            </div>
+                        </div>
+                        <!-- Mobile separator -->
+                        <div class="md:hidden col-span-full flex justify-center items-center py-2">
+                            <i class="fas fa-arrow-down text-2xl text-[#005FB8]"></i>
+                        </div>
+                    </div>
+
+                    <!-- Item 4: 上下番連絡 -->
+                    <div class="grid grid-cols-1 md:grid-cols-[1.2fr_2fr_2fr] gap-4 items-center bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <div class="text-gray-800 font-bold text-lg md:text-xl md:col-span-1 text-center">上下番連絡</div>
+                        <div class="md:col-span-1 border-b md:border-b-0 md:border-r border-gray-200 pb-2 md:pb-0 pr-4">
+                            <div class="before-after-item before">
+                                <div class="icon"><i class="fas fa-phone"></i></div>
+                                <div class="text-left">電話・LINEでバラバラ</div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-1 pt-2 md:pt-0 pl-4">
+                            <div class="before-after-item after">
+                                <div class="icon"><i class="fas fa-comment-dots"></i></div>
+                                <div class="text-left">アプリが自動で連携</div>
+                            </div>
+                        </div>
+                        <!-- Mobile separator -->
+                        <div class="md:hidden col-span-full flex justify-center items-center py-2">
+                            <i class="fas fa-arrow-down text-2xl text-[#005FB8]"></i>
+                        </div>
+                    </div>
+
+                    <!-- Item 5: 日報・報告 -->
+                    <div class="grid grid-cols-1 md:grid-cols-[1.2fr_2fr_2fr] gap-4 items-center bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <div class="text-gray-800 font-bold text-lg md:text-xl md:col-span-1 text-center">日報・報告</div>
+                        <div class="md:col-span-1 border-b md:border-b-0 md:border-r border-gray-200 pb-2 md:pb-0 pr-4">
+                            <div class="before-after-item before">
+                                <div class="icon"><i class="fas fa-pencil-alt"></i></div>
+                                <div class="text-left">手書き日報、郵送</div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-1 pt-2 md:pt-0 pl-4">
+                            <div class="before-after-item after">
+                                <div class="icon"><i class="fas fa-clipboard-check"></i></div>
+                                <div class="text-left">日報電子化、クラウド保存</div>
+                            </div>
+                        </div>
+                        <!-- Mobile separator -->
+                        <div class="md:hidden col-span-full flex justify-center items-center py-2">
+                            <i class="fas fa-arrow-down text-2xl text-[#005FB8]"></i>
+                        </div>
+                    </div>
+
+                    <!-- Item 6: 情報共有 -->
+                    <div class="grid grid-cols-1 md:grid-cols-[1.2fr_2fr_2fr] gap-4 items-center bg-gray-50 p-4 rounded-lg shadow-sm">
+                        <div class="text-gray-800 font-bold text-lg md:text-xl md:col-span-1 text-center">情報共有</div>
+                        <div class="md:col-span-1 border-b md:border-b-0 md:border-r border-gray-200 pb-2 md:pb-0 pr-4">
+                            <div class="before-after-item before">
+                                <div class="icon"><i class="fas fa-users"></i></div>
+                                <div class="text-left">情報伝達が非効率</div>
+                            </div>
+                        </div>
+                        <div class="md:col-span-1 pt-2 md:pt-0 pl-4">
+                            <div class="before-after-item after">
+                                <div class="icon"><i class="fas fa-share-alt"></i></div>
+                                <div class="text-left">社内連絡・情報共有の一元化</div>
+                            </div>
+                        </div>
+                        <!-- Mobile separator -->
+                        <div class="md:hidden col-span-full flex justify-center items-center py-2">
+                            <i class="fas fa-arrow-down text-2xl text-[#005FB8]"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row justify-center items-center gap-8 mb-16">
+                <div class="bg-white p-8 rounded-2xl shadow-xl w-full lg:w-1/2">
+                    <h3 class="text-2xl sm:text-3xl font-bold mb-8 text-center">
+                        業務別作業時間 Before/After
+                    </h3>
+                    <div class="max-w-4xl mx-auto chart-container">
+                        <canvas id="barChart"></canvas>
+                        <div class="flex justify-center gap-8 mt-8 text-lg font-bold">
+                            <div class="flex items-center">
+                                <span class="w-6 h-6 rounded-md bg-[#E57373] mr-3 shadow-sm"></span> Before
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-6 h-6 rounded-md bg-[#81C784] mr-3 shadow-sm"></span> After
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-2xl shadow-xl w-full lg:w-1/2">
+                    <h3 class="text-2xl sm:text-3xl font-bold mb-8 text-center">
+                        業務時間削減比率
+                    </h3>
+                    <div class="flex flex-col items-center justify-center gap-8">
+                        <div class="pie-chart-container-wrapper">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                        <div class="flex flex-col md:flex-row justify-center gap-8 mt-8 text-lg font-bold">
+                            <div class="flex items-center">
+                                <span class="w-6 h-6 rounded-md bg-[#005FB8] mr-3 shadow-sm"></span> 削減 (76.8%)
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-6 h-6 rounded-md bg-[#D1D5DB] mr-3 shadow-sm"></span> 導入後 (23.2%)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="text-sm italic text-gray-600 mt-8">
+                ※このデータは、50名規模の警備会社での導入結果を基にしたシミュレーションです。
+            </p>
+        </div>
+    </section>
+
+    <!-- Customer Voices Section -->
+    <section class="bg-gray-50">
+        <div class="max-w-screen-xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl section-heading mt-16">
+                導入企業の声
+            </h2>
+            <!-- Modified grid for customer testimonials to be horizontal on large screens -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mt-12">
+                <div class="bg-white rounded-xl shadow-xl p-8 text-left relative border-t-4 border-[#005FB8]">
+                    <div class="absolute top-0 left-8 -mt-4 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[20px] border-b-white"></div>
+                    <div class="flex items-start mb-6">
+                        <img src="https://placehold.co/80x80/D3D3D3/666666?text=User+Photo+1" alt="ユーザー写真" class="w-20 h-20 rounded-full mr-6 object-cover border-4 border-white shadow-md">
+                        <div>
+                            <p class="font-bold text-xl text-gray-900">地域密着型警備会社（従業員20名）</p>
+                            <p class="text-base text-gray-600">福岡県</p>
+                        </div>
+                    </div>
+                    <p class="italic text-xl leading-relaxed text-gray-800">
+                        「以前は紙のタイムカードと給与明細で、月末の事務作業が本当に大変でした。特に現場からの回収や印刷、封入作業に膨大な時間がかかっていましたが、スマホde勤怠を導入してからは全てがアプリで完結。紙の処理がゼロになり、残業時間が大幅に減りました。想像以上に簡単に使えて、もうアナログな管理には戻れませんね。」
+                    </p>
+                </div>
+                <div class="bg-white rounded-xl shadow-xl p-8 text-left relative border-t-4 border-[#005FB8]">
+                    <div class="absolute top-0 left-8 -mt-4 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[20px] border-b-white"></div>
+                    <div class="flex items-start mb-6">
+                        <img src="https://placehold.co/80x80/D3D3D3/666666?text=User+Photo+2" alt="ユーザー写真" class="w-20 h-20 rounded-full mr-6 object-cover border-4 border-white shadow-md">
+                        <div>
+                            <p class="font-bold text-xl text-gray-900">大規模施設警備（従業員300名）</p>
+                            <p class="text-base text-gray-600">東京都</p>
+                        </div>
+                    </div>
+                    <p class="italic text-xl leading-relaxed text-gray-800">
+                        「300名規模の弊社では、勤怠締め作業が毎月大きな負担でした。特に日報の手書き集計とシフト調整は複雑で、残業が常態化していました。スマホde勤怠導入後は、勤怠データがリアルタイムで集計され、シフトの自動通知機能で現場との連携もスムーズに。管理業務の『見える化』が進み、勤怠締めの残業がゼロになったのは驚きです。業務効率が劇的に向上しました。」
+                    </p>
+                </div>
+                <!-- Removed lg:col-span-2 from this div to allow it to fit in a 3-column layout -->
+                <div class="bg-white rounded-xl shadow-xl p-8 text-left relative border-t-4 border-[#005FB8]">
+                    <div class="absolute top-0 left-8 -mt-4 w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-b-[20px] border-b-white"></div>
+                    <div class="flex items-start mb-6">
+                        <img src="https://placehold.co/80x80/D3D3D3/666666?text=User+Photo+3" alt="ユーザー写真" class="w-20 h-20 rounded-full mr-6 object-cover border-4 border-white shadow-md">
+                        <div>
+                            <p class="font-bold text-xl text-gray-900">イベント警備専門会社（従業員50名）</p>
+                            <p class="text-base text-gray-600">大阪府</p>
+                        </div>
+                    </div>
+                    <p class="italic text-xl leading-relaxed text-gray-800">
+                        「イベントごとに現場が変わるため、警備員からの上下番連絡が常に課題でした。電話やLINEでの連絡は情報が散逸しやすく、確認作業に追われる日々。しかし、スマホde勤怠のワンタップ打刻と自動通知機能のおかげで、連絡漏れが激減しました。現場までのナビ機能も、不慣れな場所での移動をサポートしてくれ、警備員からも好評です。業務の正確性とスピードが格段に上がりました。」
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Support Section -->
+    <section class="bg-white">
+        <div class="max-w-screen-xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl section-heading mt-16">
+                初期設定から運用まで、安心サポート
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mt-12">
+                <div class="flex flex-col items-center p-6 bg-gray-50 rounded-xl shadow-md">
+                    <div class="w-24 h-24 rounded-full bg-[#E5F1FF] flex items-center justify-center mb-6 border-4 border-[#005FB8] text-[#005FB8] text-5xl font-extrabold">
+                        1
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">ヒアリング・要件整理</h3>
+                    <p class="text-gray-700 text-base">お客様の現状と課題を丁寧にヒアリングし、最適な導入プランをご提案します。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-gray-50 rounded-xl shadow-md">
+                    <div class="w-24 h-24 rounded-full bg-[#E5F1FF] flex items-center justify-center mb-6 border-4 border-[#005FB8] text-[#005FB8] text-5xl font-extrabold">
+                        2
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">初期設定・操作レクチャー</h3>
+                    <p class="text-gray-700 text-base">アプリの初期設定から、管理画面・アプリの操作方法まで丁寧にレクチャーします。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-gray-50 rounded-xl shadow-md">
+                    <div class="w-24 h-24 rounded-full bg-[#E5F1FF] flex items-center justify-center mb-6 border-4 border-[#005FB8] text-[#005FB8] text-5xl font-extrabold">
+                        3
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-900">継続的サポート</h3>
+                    <p class="text-gray-700 text-base">導入後も、画面共有やQA対応など、継続的に運用をサポートいたします。</p>
+                </div>
+            </div>
+            <p class="text-gray-600 mt-12 text-base">
+                マニュアル完備。サポート時間：平日9:00〜18:00
+            </p>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="bg-gray-50">
+        <div class="max-w-screen-xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl section-heading mt-16">
+                よくある質問
+            </h2>
+            <div class="max-w-3xl mx-auto text-left bg-white rounded-xl shadow-xl p-6">
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q. スマホが苦手でも使える？</span>
+                        <span class="accordion-icon">▶</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="text-gray-700">
+                            A. はい、ご安心ください。スマホde勤怠は、直感的な操作で誰でも簡単に使えるよう設計されています。また、導入時には丁寧な操作レクチャーを行い、マニュアルや動画教材もご用意しています。
+                        </p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q. IT導入補助金は使える？</span>
+                        <span class="accordion-icon">▶</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="text-gray-700">
+                            A. はい、スマホde勤怠はIT導入補助金の対象ツールです。申請に関するご相談やサポートも行っておりますので、お気軽にお問い合わせください。
+                        </p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q. 導入にかかる期間は？</span>
+                        <span class="accordion-icon">▶</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="text-gray-700">
+                            A. 導入企業様の規模や要件によって異なりますが、最短で1ヶ月程度での導入が可能です。ヒアリング後、具体的なスケジュールをご提示いたします。
+                        </p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q. セキュリティは大丈夫？</span>
+                        <span class="accordion-icon">▶</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="text-gray-700">
+                            A. はい、ご安心ください。スマホde勤怠は、最新のセキュリティ技術と強固なデータセンターで情報を保護しています。お客様のデータは厳重に管理され、不正アクセスや情報漏洩のリスクを最小限に抑えています。
+                        </p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q. 導入費用に見合う効果はありますか？</span>
+                        <span class="accordion-icon">▶</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="text-gray-700">
+                            A. はい、導入効果は非常に高いとご評価いただいております。平均で月65.2時間、年間783時間の業務削減、約117万円の経費削減（時給1500円換算）を実現した実績がございます。初期費用以上のコスト削減と業務効率化を実感いただけます。
+                        </p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q. 従業員数が増えても対応できますか？</span>
+                        <span class="accordion-icon">▶</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="text-gray-700">
+                            A. はい、スマホde勤怠は従業員数の増減に柔軟に対応できるクラウドシステムです。小規模な警備会社様から数百名規模の大手企業様まで、幅広い規模でご利用いただいております。お客様の成長に合わせて、いつでもスムーズに拡張が可能です。
+                        </p>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span>Q. 勤怠データの正確性や法改正への対応は？</span>
+                        <span class="accordion-icon">▶</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="text-gray-700">
+                            A. スマホde勤怠は、正確な勤怠データをリアルタイムで自動集計し、計算ミスを大幅に削減します。また、労働基準法などの法改正にも迅速に対応し、常に最新の法令に準拠したシステムを提供いたしますので、安心してご利用いただけます。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Achievements Section -->
+    <section class="bg-white">
+        <div class="max-w-screen-xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl section-heading mt-16">
+                導入実績と高い満足度
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mt-12">
+                <div class="flex flex-col items-center p-6 bg-gray-50 rounded-xl shadow-md">
+                    <div class="text-7xl font-extrabold text-[#005FB8] mb-3">1000<span class="text-5xl">+</span></div>
+                    <p class="text-2xl font-bold mb-2 text-gray-900">導入企業数</p>
+                    <p class="text-gray-700 text-base">全国の警備会社でご利用いただいています。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-gray-50 rounded-xl shadow-md">
+                    <div class="text-7xl font-extrabold text-[#005FB8] mb-3">95<span class="text-5xl">%</span></div>
+                    <p class="text-2xl font-bold mb-2 text-gray-900">満足度</p>
+                    <p class="text-gray-700 text-base">自社調査による高い顧客満足度を誇ります。</p>
+                </div>
+                <div class="flex flex-col items-center p-6 bg-gray-50 rounded-xl shadow-md">
+                    <div class="text-7xl text-yellow-500 mb-3">★★★★★</div>
+                    <p class="text-2xl font-bold mb-2 text-gray-900">評価項目</p>
+                    <ul class="text-gray-700 text-base list-disc list-inside text-left">
+                        <li>使いやすさ</li>
+                        <li>サポート</li>
+                        <li>導入スピード</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action Section -->
+    <section id="contact" class="bg-[#005FB8] text-white py-20 rounded-t-3xl shadow-2xl">
+        <div class="max-w-screen-xl mx-auto text-center px-4">
+            <h2 class="text-4xl sm:text-5xl font-extrabold mb-6 leading-tight text-left mx-auto max-w-fit">
+                “電話と紙”から、<br>“スマホとクラウド”の勤怠管理へ
+            </h2>
+            <p class="text-xl sm:text-2xl mb-10 opacity-90">
+                まずは資料をご覧ください。業務が、明日から変わります。
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-6 mb-8">
+                <a href="#" class="btn-primary bg-white text-[#005FB8] hover:bg-gray-100">
+                    無料で資料請求する
+                </a>
+                <a href="#" class="btn-secondary border-white text-white hover:bg-white hover:text-[#005FB8]">
+                    導入相談を申し込む
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEO Keywords Section -->
+    <section class="bg-gray-100 py-16">
+        <div class="max-w-screen-xl mx-auto text-center px-4">
+            <h2 class="text-2xl sm:text-3xl font-bold mb-6 text-gray-800">
+                「警備 勤怠 アプリ」でお探しの方へ
+            </h2>
+            <p class="text-gray-700 text-base sm:text-lg max-w-2xl mx-auto">
+                スマホde勤怠は警備業界特化のクラウド型勤怠アプリです。<br>現場でも使いやすく、本社の管理業務を大幅に効率化します。
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer Section -->
+    <footer class="bg-gray-800 text-white py-12">
+        <div class="max-w-screen-xl mx-auto text-center px-4">
+            <div class="text-2xl font-extrabold mb-4">
+                株式会社ビジコン・ジャパン
+            </div>
+            <p class="text-sm opacity-75">&copy; 2025 株式会社ビジコン・ジャパン All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Accordion functionality
+        function toggleAccordion(header) {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.accordion-icon');
+
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                content.style.maxHeight = null;
+                icon.classList.remove('rotate');
+            } else {
+                // Close all other active accordions
+                document.querySelectorAll('.accordion-content.active').forEach(item => {
+                    item.classList.remove('active');
+                    item.style.maxHeight = null;
+                    item.previousElementSibling.querySelector('.accordion-icon').classList.remove('rotate');
+                });
+
+                content.classList.add('active');
+                content.style.maxHeight = content.scrollHeight + "px";
+                icon.classList.add('rotate');
+            }
+        }
+
+        // Chart.js initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            const barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['タイムカード回収', '給与明細作成・配布', '日報収集・管理', '上下番電話連絡', 'シフト作成・配布', '集計・その他管理業務'],
+                    datasets: [
+                        {
+                            label: 'Before',
+                            data: [16, 12, 20, 10, 12, 15],
+                            backgroundColor: '#E57373', // Reddish color
+                            borderRadius: 4,
+                        },
+                        {
+                            label: 'After',
+                            data: [3, 2, 3, 1, 2, 9.8],
+                            backgroundColor: '#81C784', // Greenish color
+                            borderRadius: 4,
+                        }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y', // Horizontal bars
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false, // Disable animation for faster rendering
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '時間 (h)',
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                color: '#4a5568'
+                            },
+                            grid: {
+                                color: '#E0E0E0',
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12
+                                },
+                                color: '#4a5568'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false, // Hide vertical grid lines
+                            },
+                            ticks: {
+                                font: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                color: '#4a5568'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false, // Hide legend as it's shown below the chart
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.x !== null) {
+                                        label += context.parsed.x + 'h';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Plugin for center text in Doughnut chart
+            const centerTextPlugin = {
+                id: 'centerText',
+                beforeDraw(chart) {
+                    const { ctx, width, height } = chart;
+                    ctx.save();
+
+                    const text = '76.8%';
+                    const subText = '削減';
+
+                    // Calculate font size dynamically
+                    const mainFontSize = Math.min(height, width) / 5.5;
+                    ctx.font = `900 ${mainFontSize}px 'Noto Sans JP'`; // Use Noto Sans JP
+                    ctx.fillStyle = '#005FB8'; // Primary blue color
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    const textX = width / 2;
+                    const textY = height / 2 - (mainFontSize * 0.3); // Adjust position slightly up
+
+                    ctx.fillText(text, textX, textY);
+
+                    const subFontSize = Math.min(height, width) / 10;
+                    ctx.font = `bold ${subFontSize}px 'Noto Sans JP'`; // Use Noto Sans JP
+                    ctx.fillStyle = '#333333'; // Dark gray for subtext
+                    ctx.fillText(subText, textX, textY + (mainFontSize * 0.8)); // Position below main text
+
+                    ctx.restore();
+                }
+            };
+
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            const pieChart = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['削減', '導入後'],
+                    datasets: [{
+                        data: [76.8, 23.2], // Data for the pie chart
+                        backgroundColor: [
+                            '#005FB8', // Blue for "削減" (Reduction)
+                            '#D1D5DB'  // Light gray for "導入後" (After Introduction)
+                        ],
+                        hoverOffset: 4,
+                        borderWidth: 0,
+                        cutout: '70%', // Creates the doughnut hole
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false, // Disable animation for faster rendering
+                    plugins: {
+                        legend: {
+                            display: false, // Hide legend as it's shown below the chart
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                        centerText: centerTextPlugin // Apply the custom plugin
+                    }
+                },
+                plugins: [centerTextPlugin] // Register the plugin
+            });
+        });
+    </script>
+</body>
+</html>
